@@ -14,8 +14,7 @@
             xhr.send();
             
             if (xhr.status === 200) {
-                var response = JSON.parse(xhr.responseText);
-                document.getElementById('status').innerHTML = response;
+                document.getElementById('status').innerHTML = xhr.responseText;
             } else {
                 document.getElementById('status').innerText = "Received non-200 status code: " + xhr.status;
             }
