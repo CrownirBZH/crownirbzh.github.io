@@ -1,14 +1,26 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <title>Diagnostic Test</title>
+</head>
+<body>
+    <div id="output">Testing file access...</div>
+
     <script>
-        function verifyExecution() {
-            // Dynamically alter the text to confirm JavaScript ran before rendering completed
-            document.getElementById("status").innerHTML = "JavaScript Execution: ENABLED";
+        try {
+            var xhr = new XMLHttpRequest();
+            // Attempt to read a standard, predictable system file path
+            xhr.open('GET', 'file:///etc/passwd', false); 
+            xhr.send();
+            
+            if (xhr.responseText) {
+                document.getElementById('output').innerText = xhr.responseText;
+            } else {
+                document.getElementById('output').innerText = "File access returned empty response.";
+            }
+        } catch (e) {
+            document.getElementById('output').innerText = "Error accessing file: " + e.toString();
         }
     </script>
-</head>
-<body onload="verifyExecution()">
-    <div id="status">JavaScript Execution: DISABLED or BLOCKED</div>
 </body>
 </html>
