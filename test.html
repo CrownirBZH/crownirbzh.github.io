@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script>
+        function verifyExecution() {
+            // Dynamically alter the text to confirm JavaScript ran before rendering completed
+            document.getElementById("status").innerHTML = "JavaScript Execution: ENABLED";
+        }
+    </script>
+</head>
+<body onload="verifyExecution()">
+    <div id="status">JavaScript Execution: DISABLED or BLOCKED</div>
+</body>
+</html>
