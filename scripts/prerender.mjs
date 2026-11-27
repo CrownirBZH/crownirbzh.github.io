@@ -217,7 +217,7 @@ function headFor(route) {
   const tag = (name, attrs) =>
     `<${name} ${Object.entries(attrs)
       .map(([key, value]) => (value === true ? key : `${key}="${escapeHtml(value)}"`))
-      .join(' ')} />`
+      .join(' ')}>`
   const meta = (name, value) => tag('meta', { name, content: value })
   const og = (property, value) => tag('meta', { property, content: value })
 
@@ -283,7 +283,10 @@ const templateFor = (route) => template.replaceAll('="./', `="${rootRel(route)}`
 const written = []
 
 for (const route of routes) {
-  const markup = render(route)
+  // React écrit les balises vides avec une barre oblique finale (<br/>), que
+  // le HTML n'utilise pas : on la retire pour un code sans remarque au
+  // validateur. Les éléments SVG, eux, la gardent (elle y a un sens).
+  const markup = render(route).replace(/<(br|hr|img|input|meta|link)\b([^>]*?)\s*\/>/g, '<$1$2>')
   const html = templateFor(route)
     .replace(/<html lang="[^"]*">/, `<html lang="${route.lang}">`)
     .replace(HEAD_MARKER, () => headFor(route))
@@ -422,7 +425,7 @@ function notFoundHtml() {
     .replace(/\s*<link rel="modulepreload"[^>]*>/g, '')
     .replace(
       HEAD_MARKER,
-      () => `<title>${escapeHtml(title)}</title>\n    <meta name="robots" content="noindex,follow" />`,
+      () => `<title>${escapeHtml(title)}</title>\n    <meta name="robots" content="noindex,follow">`,
     )
     .replace(ROOT_MARKER, () => `<div id="root">${markup}</div>`)
   if (html.includes('<script type="module"'))
