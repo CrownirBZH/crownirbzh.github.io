@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import External from './components/External.jsx'
-import { ArrowIcon, LinkedInIcon, MailIcon } from './components/Icons.jsx'
+import { ArrowIcon, LinkedInIcon, Logo, MailIcon } from './components/Icons.jsx'
 import Legal from './components/Legal.jsx'
 import Reveal from './components/Reveal.jsx'
 import Terminal from './components/Terminal.jsx'
@@ -315,7 +315,7 @@ function Home({ t, mailto, links, onNavigate }) {
       <section className="section" id="about" tabIndex={-1}>
         <div className="container about">
           <Reveal className="about__badge" aria-hidden="true">
-            CH
+            <Logo />
           </Reveal>
           <Reveal>
             <h2>

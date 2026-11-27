@@ -810,9 +810,11 @@ h2 > .eyebrow {
   border-radius: 28px;
   border: 1px solid rgba(143, 125, 255, 0.3);
   background: radial-gradient(70% 70% at 30% 20%, rgba(143, 125, 255, 0.22), transparent 70%), var(--surface);
-  font: 700 3.4rem var(--mono);
-  letter-spacing: -0.06em;
-  color: var(--accent);
+}
+
+.about__badge svg {
+  width: 58%;
+  height: auto;
 }
 
 .about h2 {
@@ -1044,7 +1046,6 @@ h2 > .eyebrow {
   .about__badge {
     width: 96px;
     border-radius: 20px;
-    font-size: 1.7rem;
   }
 }
 
