@@ -1,93 +1,113 @@
-# Website
+# Site de Camille HACQUET
 
+Site vitrine en français et en anglais (Vite + React). `bun run build` produit un dossier `dist/` entièrement statique : chaque page est un vrai fichier HTML, lisible sans JavaScript par les moteurs de recherche et les assistants IA.
 
+## Commandes
 
-## Getting started
+| Commande          | Rôle                                                                              |
+| ----------------- | --------------------------------------------------------------------------------- |
+| `bun install`     | Installe les dépendances (une seule fois).                                        |
+| `bun run dev`     | Site en local avec rechargement à chaud.                                          |
+| `bun run build`   | Génère le site dans `dist/`.                                                      |
+| `bun run preview` | Sert `dist/` en local pour vérifier le résultat du build.                         |
+| `bun run lint`    | Vérifie le code.                                                                  |
+| `bun run og`      | Régénère l'image de partage `public/og.png` à partir de `scripts/og.svg` (macOS). |
+| `bun run icons`   | Régénère les icônes PNG à partir de `public/favicon.svg` (macOS).                 |
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## Pages générées
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+| Adresse              | Fichier                            | Langue   |
+| -------------------- | ---------------------------------- | -------- |
+| `/`                  | `dist/index.html`                  | français |
+| `/en/`               | `dist/en/index.html`               | anglais  |
+| `/mentions-legales/` | `dist/mentions-legales/index.html` | français |
+| `/en/legal-notice/`  | `dist/en/legal-notice/index.html`  | anglais  |
 
-## Add your files
+Le build écrit aussi `robots.txt` et `llms.txt`, puis `sitemap.xml` et `404.html` une fois l'adresse du site renseignée. La liste des pages se trouve dans `src/routes.js`.
 
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+## Adresse du site (à renseigner avant la mise en ligne)
 
+L'adresse se règle à un seul endroit, `seo.config.mjs` :
+
+```js
+export const SITE_URL = process.env.SITE_URL ?? 'https://hacquet.com'
 ```
-cd existing_repo
-git remote add origin https://git.ato.eus/bzh/website.git
-git branch -M main
-git push -uf origin main
-```
 
-## Integrate with your tools
+Deux possibilités :
 
-* [Set up project integrations](https://git.ato.eus/bzh/website/-/settings/integrations)
+- remplacer `''` par l'adresse, en `https` et sans `/` final, par exemple `'https://www.exemple.fr'` ;
+- ou la passer au moment du build : `SITE_URL=https://www.exemple.fr bun run build`.
 
-## Collaborate with your team
+Tant qu'elle est vide, le build fonctionne et affiche un avertissement. Les éléments suivants ne sont pas générés, car ils exigent une adresse complète :
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+- lien canonique et balises `hreflang` ;
+- `og:url`, image de partage (`og:image`, `twitter:image`) ;
+- `sitemap.xml` et la ligne `Sitemap:` de `robots.txt` ;
+- adresses dans les données structurées (JSON-LD) et section « Pages » de `llms.txt` ;
+- `404.html`.
 
-## Test and Deploy
+Le même fichier contient `AI_TRAINING` (`'allow'` ou `'disallow'`), qui autorise ou refuse dans `robots.txt` les robots d'entraînement de modèles d'IA (GPTBot, ClaudeBot, Google-Extended, CCBot, Applebot-Extended). Les robots de recherche restent autorisés dans les deux cas.
 
-Use the built-in continuous integration in GitLab.
+## Modifier les textes
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+Tout le texte du site, dans les deux langues, se trouve dans `src/content.js` :
 
-***
+- `site` : nom, email, LinkedIn, et `location` (ville, département, région). Changer la ville ici la change partout : textes, balises `<title>` et description, données structurées, `llms.txt`.
+- `site.areaServed` : zone d'intervention, laissée à `null` pour l'instant.
+- `content.fr` et `content.en` : les textes de chaque section. `meta` regroupe les titres et descriptions destinés aux moteurs de recherche (65 caractères au plus pour un titre, 160 pour une description ; le build avertit en cas de dépassement).
+- `faq.items` : questions affichées sur la page d'accueil.
+- `faqDrafts` (fin du fichier) : réponses en attente de validation. Elles ne sont ni affichées ni publiées. Pour en publier une, la déplacer dans `faq.items` de la bonne langue et retirer `draft: true`.
+- `legal.sections` : mentions légales. Tant qu'un champ vaut `TODO` (« à compléter »), les deux pages de mentions légales portent `noindex` et sont absentes du sitemap. Cela se lève automatiquement une fois tous les champs remplis.
 
-# Editing this README
+Après une modification : `bun run build`.
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+## Déployer `dist/`
 
-## Suggestions for a good README
+1. Vérifier `SITE_URL` (actuellement `https://hacquet.com`), puis lancer `bun run build`.
+2. Envoyer **le contenu** de `dist/` à la racine du site chez l'hébergeur (hébergement statique : aucun serveur Node n'est nécessaire).
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+Réglages à vérifier chez l'hébergeur :
 
-## Name
-Choose a self-explaining name for your project.
+- les dossiers servent leur `index.html` (`/en/` renvoie `en/index.html`) ;
+- `/en` redirige vers `/en/` (comportement par défaut de la plupart des hébergeurs) ;
+- **pas** de règle de type « application monopage » qui renvoie `index.html` pour toute adresse inconnue : une adresse inexistante doit répondre 404 (avec `404.html`) ;
+- `robots.txt` et `llms.txt` ne sont pris en compte qu'à la racine du domaine ;
+- ne pas activer de protection anti-robots qui bloquerait les robots de recherche ou d'IA.
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+Le site fonctionne aussi dans un sous-dossier (les liens internes sont relatifs) : indiquer alors le sous-dossier dans `SITE_URL`, par exemple `https://exemple.fr/site`.
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+## Organisation du code
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+- `index.html` : gabarit commun à toutes les pages.
+- `src/App.jsx`, `src/components/` : mise en page.
+- `src/index.css` : styles.
+- `src/routes.js` : liste des pages et liens entre elles.
+- `src/main.jsx` : démarrage dans le navigateur. `src/entry-server.jsx` : rendu pendant le build.
+- `scripts/prerender.mjs` : écrit les fichiers HTML, `robots.txt`, `llms.txt`, `sitemap.xml` et `404.html`.
+- `public/` : fichiers copiés tels quels (icônes, image de partage).
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+## Adresses des sections
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+Les liens du menu n'utilisent pas d'ancre `#`. Chaque section de l'accueil a sa propre adresse : `/pentest`, `/retro-ingenierie`, `/developpement`, `/a-propos`, `/faq`, `/contact` (et `/en/pentest`, `/en/reverse-engineering`, etc.). La liste est dans `src/routes.js` (`sections`).
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+Au build, chaque adresse reçoit une copie de la page d'accueil (`pentest.html`, etc.). Son lien canonique désigne l'accueil et elle est absente du sitemap, pour éviter le contenu dupliqué.
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+## Déploiement : GitLab vers GitHub Pages
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+Le code vit sur le GitLab auto-hébergé (`git.ato.eus:bzh/website`). Le site est servi par GitHub Pages. Le lien entre les deux est un miroir : GitLab recopie le dépôt vers GitHub à chaque push, et l'action `.github/workflows/deploy.yml` y construit puis publie le site.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+Mise en place, à faire une seule fois :
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+1. **GitHub** : créer un dépôt vide (sans README). Sur l'offre gratuite, GitHub Pages demande un dépôt public : le code source y sera donc visible.
+2. **GitHub** : créer un jeton d'accès limité à ce dépôt, avec le droit « Contents : Read and write » et le droit « Workflows : Read and write » (sans ce dernier, GitHub refuse les pushs qui touchent `.github/workflows/`).
+3. **GitLab** : Settings > Repository > Mirroring repositories. Adresse `https://github.com/<utilisateur>/<depot>.git`, direction « Push », authentification par nom d'utilisateur GitHub et jeton.
+4. **GitHub** : Settings > Pages > Build and deployment > Source : « GitHub Actions ».
+5. **GitHub** : Settings > Pages > Custom domain : `hacquet.com`. Avec un déploiement par action, c'est ce réglage qui compte ; le fichier `public/CNAME` n'est pas lu.
+6. **Cloudflare** : faire pointer le domaine vers GitHub Pages (enregistrement `CNAME` vers `<utilisateur>.github.io`, ou les adresses IP de GitHub Pages pour le domaine nu).
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+Ensuite, un `git push` vers GitLab suffit : le miroir se déclenche tout seul (ou par le bouton de synchronisation de la même page), puis l'action GitHub publie en une à deux minutes. L'action lance aussi `bun run lint` : un push qui ne passe pas le lint n'est pas publié.
 
-## License
-For open source projects, say how it is licensed.
+## Outils
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+- **Bun** : gestionnaire de paquets, lanceur de commandes et moteur d'exécution (`bun install`, `bun run dev`, `bun run build`, `bun run preview`). Vite et le script de prérendu tournent sous Bun.
+- **Biome** : formatage et lint (`bun run lint` pour vérifier, `bun run format` pour corriger). Réglages dans `biome.json`.
